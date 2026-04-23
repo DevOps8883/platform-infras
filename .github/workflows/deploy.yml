@@ -23,9 +23,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Deploy to environment
+      - name: Install kubectl
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y kubectl
+        - name: Set up kubeconfig
+      run: |
+        mkdir -p $HOME/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+
+        - name: Deploy to environment
+        
         env:
-          DATABASE_URL: secrets.DATABASE_URL_PRD
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PRD }}
         run: |
           echo "Deploying with DATABASE_URL: $DATABASE_URL"
           # DEPRECATED? — Dev note: "this should read from secrets not be hardcoded"
