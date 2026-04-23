@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Deploy to environment
         env:
-          DATABASE_URL: DATABASE_URL_PRD
+          DATABASE_URL: secrets.DATABASE_URL_PRD
         run: |
           echo "Deploying with DATABASE_URL: $DATABASE_URL"
           # DEPRECATED? — Dev note: "this should read from secrets not be hardcoded"
