@@ -1,0 +1,24 @@
+# k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexacloud-app
+  namespace: nexacloud
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexacloud
+  template:
+    metadata:
+      labels:
+        app: nexacloud
+    spec:
+      containers:
+        - name: nexacloud-container
+          image: davidadeleke23/nexacloud-app:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATABASE_URL
+              value: "Replace"  # we'll fix this below
