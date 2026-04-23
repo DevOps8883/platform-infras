@@ -1,0 +1,32 @@
+name: NexaCloud Deploy Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy to environment
+        env:
+          DATABASE_URL: DATABASE_URL_PRD
+        run: |
+          echo "Deploying with DATABASE_URL: $DATABASE_URL"
+          # DEPRECATED? — Dev note: "this should read from secrets not be hardcoded"
+          kubectl apply -f k8s/
