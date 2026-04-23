@@ -2,7 +2,7 @@ name: NexaCloud Deploy Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [man]
 
 jobs:
   build:
