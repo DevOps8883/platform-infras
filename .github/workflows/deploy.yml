@@ -40,6 +40,10 @@ jobs:
           chmod 600 $HOME/.kube/config
 
       - name: Verify cluster access
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET_ID }}
+          AWS_DEFAULT_REGION: eu-west-1
         run: |
           export KUBECONFIG=$HOME/.kube/config
           kubectl cluster-info
@@ -48,9 +52,9 @@ jobs:
       - name: Deploy to environment
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET_ID }}
           AWS_DEFAULT_REGION: eu-west-1
-
         run: |
           export KUBECONFIG=$HOME/.kube/config
           echo "Deploying with DATABASE_URL is set"
