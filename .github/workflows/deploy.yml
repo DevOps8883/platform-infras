@@ -1,32 +1,43 @@
+# Name of the workflow visible in the GitHub Actions tab
 name: NexaCloud Deploy Pipeline
 
+# Trigger this workflow only when code is pushed to the main branch
 on:
   push:
     branches: [main]
 
 jobs:
+  # First job: Handles the application code and testing
   build:
     runs-on: ubuntu-latest
     steps:
+      # Pulls the code from your repository into the runner
       - uses: actions/checkout@v3
 
+      # Prepares the Node.js environment
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          cache: 'npm' # Speeds up builds by caching node_modules    
 
-      - name: Install dependencies
-        run: npm install
+      # Clean install of dependencies based on package-lock.json
+      - name: Install dependencies 
+        run: npm ci 
 
+      # Executes the test suite
       - name: Run tests
         run: npm test
 
+  # Second job: Handles the deployment to AWS EKS
   deploy:
-    needs: build
+    needs: build # Only runs if the 'build' job finishes successfully
     runs-on: ubuntu-latest
     steps:
+      # Pulls the code again to access the k8s/ folder files
       - uses: actions/checkout@v3
 
+      # Logs into AWS using secrets stored in GitHub
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -34,20 +45,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_ID }}
           aws-region: eu-west-1
 
+      # Extra security to ensure AWS keys never appear in logs
       - name: Mask Sensitive Values
         run: |
           echo "::add-mask::$AWS_ACCESS_KEY_ID"
           echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
           echo "::add-mask::$AWS_SESSION_TOKEN"    
 
+      # Connects the runner to your specific EKS cluster
       - name: Update Kubeconfig
         run: |
           aws eks update-kubeconfig --name nexacloud-cluster --region eu-west-1
 
+      # Applies the Kubernetes manifest files to your cluster
       - name: Deploy to environment
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRD }}
         run: |
           echo "Deploying with DATABASE_URL"
           kubectl apply -f k8s/
+
 
