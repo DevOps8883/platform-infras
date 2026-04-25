@@ -46,7 +46,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./path/platform-infras/Dockerfile 
+          file: ./platform-infras/Dockerfile 
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/nexacloud-app:latest
