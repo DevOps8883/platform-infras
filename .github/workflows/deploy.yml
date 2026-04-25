@@ -34,6 +34,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_ID }}
           aws-region: eu-west-1
 
+      - name: Mask Sensitive Values
+        run: |
+          echo "::add-mask::$AWS_ACCESS_KEY_ID"
+          echo "::add-mask::$AWS_SECRET_ACCESS_KEY"
+          echo "::add-mask::$AWS_SESSION_TOKEN"    
+
       - name: Update Kubeconfig
         run: |
           aws eks update-kubeconfig --name nexacloud-cluster --region eu-west-1
@@ -44,3 +50,4 @@ jobs:
         run: |
           echo "Deploying with DATABASE_URL"
           kubectl apply -f k8s/
+
