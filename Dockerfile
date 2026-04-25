@@ -1,32 +1,21 @@
-# Use a slim version of Node.js for a smaller image
-FROM node:20-slim AS builder
-
-# Set the working directory inside the container
+# Stage 1: Build
+FROM node:18-slim AS builder
 WORKDIR /app
 
-# Copy package files first to leverage Docker's build cache
+# Copy package files and install ALL dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy the rest of the application code
+# Copy the rest of the code
 COPY . .
 
-# Optional: Build the app (if using TypeScript or React)
-# RUN npm run build
-
-# --- Production Stage ---
-FROM node:20-slim
-
+# Stage 2: Production
+FROM node:18-slim
 WORKDIR /app
 
-# Only copy the necessary production files from the builder stage
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app .
+# Copy only the necessary files from the builder
+# This avoids the "not found" error by ensuring /app exists
+COPY --from=builder /app /app
 
-# Expose the port your app runs on
 EXPOSE 3000
-
-# Start the application
 CMD ["npm", "start"]
