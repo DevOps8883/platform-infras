@@ -24,38 +24,23 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install kubectl
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y kubectl
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ID }}
+          aws-region: eu-west-1
 
-      - name: Set up kubeconfig
+      - name: Update Kubeconfig
         run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-
-      - name: Verify cluster access
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET_ID }}
-          AWS_DEFAULT_REGION: eu-west-1
-        run: |
-          export KUBECONFIG=$HOME/.kube/config
-          kubectl cluster-info
-          kubectl get nodes
+          aws eks update-kubeconfig --name nexacloud-cluster --region eu-west-1
 
       - name: Deploy to environment
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_PRD }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET_ID }}
-          AWS_DEFAULT_REGION: eu-west-1
         run: |
-          export KUBECONFIG=$HOME/.kube/config
-          echo "Deploying with DATABASE_URL is set"
+          echo "Deploying with DATABASE_URL"
           kubectl apply -f k8s/
