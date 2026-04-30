@@ -75,11 +75,13 @@ jobs:
           aws eks update-kubeconfig \
             --name ${{ env.EKS_CLUSTER }} \
             --region ${{ env.AWS_REGION }}
-
-      - name: Create namespace (idempotent)
+            
+#  NEW Deployment: Delete old deployment to avoid immutable selector issues
+      - name: Delete old deployment (safe reset)
         run: |
-          kubectl create namespace ${{ env.NAMESPACE }} \
-          --dry-run=client -o yaml | kubectl apply -f -
+          kubectl delete deployment nexacloud-app \
+          -n ${{ env.NAMESPACE }} \
+          --ignore-not-found=true
 
       - name: Apply Kubernetes manifests
         run: |
