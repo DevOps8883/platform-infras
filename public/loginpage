@@ -1,0 +1,23 @@
+function login() {
+        const username = document.getElementById("username").value;
+        const password = document.getElementById("password").value;
+        const message = document.getElementById("message");
+
+        // Simple hardcoded credentials
+        const validUser = "admin";
+        const validPass = "1234";
+
+        if (!username || !password) {
+            message.textContent = "Please fill in all fields";
+            message.className = "error";
+            return;
+        }
+
+        if (username === validUser && password === validPass) {
+            message.textContent = "Login successful!";
+            message.className = "success";
+        } else {
+            message.textContent = "Invalid username or password";
+            message.className = "error";
+        }
+    }
