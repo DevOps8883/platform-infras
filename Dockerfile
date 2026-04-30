@@ -1,21 +1,20 @@
-# Stage 1: Build
-FROM node:18-slim AS builder
+# Stage 1: Install dependencies
+FROM node:18-slim AS deps
 WORKDIR /app
 
-# Copy package files and install ALL dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci --only=production
 
-# Copy the rest of the code
-COPY . .
-
-# Stage 2: Production
+# Stage 2: Production image
 FROM node:18-slim
 WORKDIR /app
 
-# Copy only the necessary files from the builder
-# This avoids the "not found" error by ensuring /app exists
-COPY --from=builder /app /app
+# Copy only production dependencies
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy application code
+COPY . .
 
 EXPOSE 3000
+
 CMD ["npm", "start"]
