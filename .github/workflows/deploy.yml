@@ -87,7 +87,7 @@ jobs:
 
       - name: Update image (only if deployment exists)
         run: |
-          kubectl set image deployment/node-app \
+          kubectl set image deployment/nexacloud-app \
           node-app=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }} \
           -n ${{ env.NAMESPACE }}
 
