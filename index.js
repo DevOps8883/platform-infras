@@ -4,8 +4,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-  res.send('DCUBE CLOUD SERVICES');
-  res.send('Welcome to the CloudWorld!');
+  res.send(
+    `
+    <h1 style="fontsize:40px; text-align:center; color:grey;">DCUBE CLOUD SERVICES</h1>
+    <p style="fontsize:25px; text-align:center; color:red;">Welcome to the CloudWorld!</p>
+  `
+    );
 });
 
 app.get('/health', (req, res) => {
