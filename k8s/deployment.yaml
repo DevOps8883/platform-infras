@@ -14,7 +14,7 @@ spec:
         app: nexacloud-app
     spec:
       containers:
-        - name: nexacloud-container
+        - name: nexacloud-app
           image: davidadeleke23/nexacloud-app:v1.0.0 # Use specific tags
           ports:
             - containerPort: 8080
