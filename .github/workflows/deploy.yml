@@ -88,11 +88,11 @@ jobs:
       - name: Update image (only if deployment exists)
         run: |
           kubectl set image deployment/nexacloud-app \
-          node-app=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }} \
+          nexacloud-app=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }} \
           -n ${{ env.NAMESPACE }}
 
       - name: Verify deployment rollout
         run: |
-          kubectl rollout status deployment/node-app -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/nexacloud-app -n ${{ env.NAMESPACE }}
 
 
