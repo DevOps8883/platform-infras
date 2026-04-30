@@ -3,6 +3,10 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
+// Serve static files from "public"
+app.use(express.static(path.join(__dirname, 'public')));
+
+/*
 app.get('/', (req, res) => {
   res.send(
     `
@@ -11,7 +15,7 @@ app.get('/', (req, res) => {
   `
     );
 });
-
+*/
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK' });
 });
