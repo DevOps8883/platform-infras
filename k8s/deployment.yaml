@@ -20,13 +20,13 @@ spec:
           image: davidadeleke23/nexacloud-app:v1.0.0 # Use specific tags
           ports:
             - containerPort: 3000
-          resources: # Prevents node crashes
-            limits:
-              cpu: "200m"
-              memory: "256Mi"
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
+         # resources: # Prevents node crashes
+          #  limits:
+           #   cpu: "200m"
+            #  memory: "256Mi"
+           # requests:
+            #  cpu: "100m"
+            #  memory: "128Mi"
           env:
             - name: DATABASE_URL
               valueFrom:
