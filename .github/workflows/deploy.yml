@@ -96,10 +96,28 @@ jobs:
 
       - name: Send status to Self-Hosted Grafana Loki
         if: always()
-        uses: grafana/loki-action@v1
-        with:
-          url: "${{ secrets.GRAFANA_LOKI_URL }}"
-          labels: '{"job": "github-actions", "pipeline": "nexacloud-deploy", "status": "${{ job.status }}"}'
+        run: |
+          TIMESTAMP=$(date +%s%N)
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d '{
+              "streams": [
+                {
+                  "stream": {
+                    "job": "github-actions",
+                    "pipeline": "nexacloud-deploy",
+                    "status": "${{ job.status }}",
+                    "run_id": "${{ github.run_id }}",
+                    "actor": "${{ github.actor }}"
+                  },
+                  "values": [
+                    [ "'$TIMESTAMP'", "Pipeline deployment finished with status: ${{ job.status }}. Triggered by ${{ github.actor }}." ]
+                  ]
+                }
+              ]
+            }' \
+            ${{ secrets.GRAFANA_LOKI_URL }}/loki/api/v1/push
+
     
 
 
