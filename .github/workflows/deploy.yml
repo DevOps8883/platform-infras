@@ -94,6 +94,14 @@ jobs:
         run: |
           kubectl rollout status deployment/nexacloud-app -n ${{ env.NAMESPACE }} --timeout=60s
 
+      - name: Send status to Self-Hosted Grafana Loki
+        if: always()
+        uses: grafana/loki-action@v1
+        with:
+          url: "${{ secrets.GRAFANA_LOKI_URL }}"
+          labels: '{"job": "github-actions", "pipeline": "nexacloud-deploy", "status": "${{ job.status }}"}'
+    
+
 
      
 
