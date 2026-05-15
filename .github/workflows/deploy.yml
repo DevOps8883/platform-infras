@@ -92,18 +92,12 @@ jobs:
 
       - name: Verify deployment rollout
         run: |
-          kubectl rollout status deployment/nexacloud-app -n ${{ env.NAMESPACE }} --timeout=20s || echo "ROLLOUT_FAILED=true" >> $GITHUB_ENV
+          kubectl rollout status deployment/nexacloud-app -n ${{ env.NAMESPACE }} --timeout=20s 
 
       - name: Send status to Self-Hosted Grafana Loki
+        # This forces GitHub to execute this step even if the rollout fails or times out
         if: always()
         run: |
-          # Dynamically calculate status text since hard crashes confuse the default variable
-          IF_FAILED="${{ env.ROLLOUT_FAILED }}"
-          DETERMINED_STATUS="success"
-          if [ "$IF_FAILED" = "true" ] || [ "${{ job.status }}" = "failure" ]; then
-            DETERMINED_STATUS="failure"
-          fi
-
           TIMESTAMP=$(date +%s%N)
           curl -H "Content-Type: application/json" \
             -X POST \
@@ -113,19 +107,16 @@ jobs:
                   "stream": {
                     "job": "github-actions",
                     "pipeline": "nexacloud-deploy",
-                    "status": "'$DETERMINED_STATUS'",
+                    "status": "${{ job.status }}",
                     "run_id": "${{ github.run_id }}",
                     "actor": "${{ github.actor }}"
                   },
                   "values": [
-                    [ "'$TIMESTAMP'", "Pipeline deployment finished with determined status: '$DETERMINED_STATUS'. Triggered by ${{ github.actor }}." ]
+                    [ "'$TIMESTAMP'", "Pipeline deployment finished with status: ${{ job.status }}. Triggered by ${{ github.actor }}." ]
                   ]
                 }
               ]
             }' \
             ${{ secrets.GRAFANA_LOKI_URL }}/loki/api/v1/push
-
-          # Force the step to throw a real error code at the very end so GitHub still marks the run as red
-          if [ "$DETERMINED_STATUS" = "failure" ]; then
-            exit 1
-          fi
+    
+      
