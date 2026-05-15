@@ -32,7 +32,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: nexacloud-secrets
-                  key: broken_db-url
+                  key: db-url
           livenessProbe:
             httpGet:
               path: /health
