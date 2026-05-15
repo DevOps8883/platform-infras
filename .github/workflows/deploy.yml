@@ -92,7 +92,7 @@ jobs:
 
       - name: Verify deployment rollout
         run: |
-          kubectl rollout status deployment/nexacloud-app -n ${{ env.NAMESPACE }} --timeout=20s 
+          kubectl rollout status deployment/nexacloud-app -n ${{ env.NAMESPACE }} --timeout=300s 
 
       - name: Send status to Self-Hosted Grafana Loki
         # This forces GitHub to execute this step even if the rollout fails or times out
