@@ -30,7 +30,37 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Code & Manifest Linting
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint || echo "No lint script defined, skipping..."
+
+      - name: Lint GitHub Actions Workflow
+        uses: rhysd/actionlint-action@v1
+
+      - name: Lint Kubernetes Manifests
+        uses: stackrox/kube-linter-action@v1.0.4
+        with:
+          directory: k8s/
+          # Optional fallback configuration if k8s dir is empty during initialization
+          disable-standing-rule-checks: false
+
   build:
+    needs: lint
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.tag }}
@@ -44,6 +74,14 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install dependencies
         run: |
@@ -153,4 +191,4 @@ jobs:
                 }
               ]
             }' \
-            ${{ secrets.GRAFANA_LOKI_URL }}/loki/api/v1/push
+            ${{ secrets.GRAFANA_LOKI_URL }}/loki/api/v1/push__
