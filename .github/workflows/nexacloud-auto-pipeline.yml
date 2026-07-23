@@ -7,6 +7,12 @@ on:
       - testing
       - main # Used for production
 
+#  THIS BLOCK TO FIX THE SECURITY PERMISSIONS BLOCKER
+permissions:
+  id-token: write   # Required to allow the reusable workflow to request OIDC tokens
+  contents: read    # Required to let actions checkout your code repos
+  actions: write     # Required if the reusable workflow manages internal execution steps      
+
 jobs:
   # Dev Pipeline Run
   deploy-dev:
