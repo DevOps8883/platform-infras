@@ -1,0 +1,6 @@
+# Ignore internal global npm dependencies that cannot impact runtime application code
+
+usr/local/lib/node_modules/npm/node_modules/brace-expansion/package.json
+usr/local/lib/node_modules/npm/node_modules/picomatch/package.json
+usr/local/lib/node_modules/npm/node_modules/sigstore/package.json
+usr/local/lib/node_modules/npm/node_modules/tar/package.json
