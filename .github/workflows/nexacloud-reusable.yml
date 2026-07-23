@@ -24,6 +24,11 @@ on:
 env:
   IMAGE_NAME: nexacloud-app
 
+# Required permissions block for secure AWS OIDC role assumption
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,11 +45,10 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Upgrade npm to latest version
-        run: npm install -g npm@latest    
-
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install -g npm@latest
+          npm ci
 
       - name: Run tests (safe fallback)
         run: npm test || echo "No tests defined, skipping..."
@@ -62,15 +66,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image locally
+      - name: Build, Scan and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          load: true
+          push: true
+          load: false  # Do not load locally if pushing directly to minimize processing
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest-${{ inputs.environment }}
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
+      # Scans the remote registry image directly, avoiding the duplicate local build step
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -81,30 +89,20 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest-${{ inputs.environment }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
-
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Loads environment-specific configurations and deployment rules from GitHub
     environment: ${{ inputs.environment }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # Upgraded to secure, keyless OIDC Authentication
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_ID }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ inputs.aws_region }}
 
       - name: Update kubeconfig
@@ -113,20 +111,21 @@ jobs:
             --name ${{ inputs.eks_cluster }} \
             --region ${{ inputs.aws_region }}
 
-      - name: Create namespace (idempotent)
+      # Substitutes the exact target image tag directly into manifests before running kubectl apply
+      - name: Dynamic tag replacement and manifest application
         run: |
-          kubectl create namespace ${{ inputs.namespace }} \
-            --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Apply Kubernetes manifests
-        run: |
-          kubectl apply -f k8s/ -n ${{ inputs.namespace }}
-
-      - name: Update image
-        run: |
-          kubectl set image deployment/nexacloud-app \
-            nexacloud-app=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }} \
-            -n ${{ inputs.namespace }}
+          kubectl create namespace ${{ inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
+          
+          export IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
+          export DOCKER_USER="${{ secrets.DOCKERHUB_USERNAME }}"
+          export ENV_NAME="${{ env.IMAGE_NAME }}"
+          
+          mkdir -p k8s-hydrated
+          for file in k8s/*.yaml; do
+            envsubst < "$file" > "k8s-hydrated/$(basename "$file")"
+          done
+          
+          kubectl apply -f k8s-hydrated/ -n ${{ inputs.namespace }}
 
       - name: Verify deployment rollout
         run: |
