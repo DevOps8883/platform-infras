@@ -1,0 +1,42 @@
+name: NexaCloud Multi-Env Orchestrator
+
+on:
+  push:
+    branches:
+      - dev
+      - testing
+      - main # Used for production
+
+jobs:
+  # Dev Pipeline Run
+  deploy-dev:
+    if: github.ref == 'refs/heads/dev'
+    uses: ./.github/workflows/nexacloud-reusable.yml
+    with:
+      environment: dev
+      aws_region: eu-west-1
+      eks_cluster: nexacloud-dev-cluster
+      namespace: nexacloud-dev
+    secrets: inherit
+
+  # Testing Pipeline Run
+  deploy-testing:
+    if: github.ref == 'refs/heads/testing'
+    uses: ./.github/workflows/nexacloud-reusable.yml
+    with:
+      environment: testing
+      aws_region: eu-west-1
+      eks_cluster: nexacloud-testing-cluster
+      namespace: nexacloud-testing
+    secrets: inherit
+
+  # Production Pipeline Run
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/nexacloud-reusable.yml
+    with:
+      environment: prod
+      aws_region: eu-west-1
+      eks_cluster: nexacloud-prod-cluster
+      namespace: nexacloud
+    secrets: inherit
