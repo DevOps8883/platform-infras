@@ -50,7 +50,7 @@ jobs:
         run: npm run lint || echo "No lint script defined, skipping..."
 
       - name: Lint GitHub Actions Workflow
-        uses: rhysd/actionlint-action@v1
+        uses: rhysd/actionlint@v1
 
       - name: Lint Kubernetes Manifests
         uses: stackrox/kube-linter-action@v1.0.4
