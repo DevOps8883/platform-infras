@@ -111,21 +111,20 @@ jobs:
             --name ${{ inputs.eks_cluster }} \
             --region ${{ inputs.aws_region }}
 
-      # Substitutes the exact target image tag directly into manifests before running kubectl apply
-      - name: Dynamic tag replacement and manifest application
+      - name: Create namespace (idempotent)
         run: |
-          kubectl create namespace ${{ inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
-          
-          export IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
-          export DOCKER_USER="${{ secrets.DOCKERHUB_USERNAME }}"
-          export ENV_NAME="${{ env.IMAGE_NAME }}"
-          
-          mkdir -p k8s-hydrated
-          for file in k8s/*.yaml; do
-            envsubst < "$file" > "k8s-hydrated/$(basename "$file")"
-          done
-          
-          kubectl apply -f k8s-hydrated/ -n ${{ inputs.namespace }}
+          kubectl create namespace ${{ inputs.namespace }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/ -n ${{ inputs.namespace }}
+
+      - name: Update image
+        run: |
+          kubectl set image deployment/nexacloud-app \
+            nexacloud-app=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.image_tag }} \
+            -n ${{ inputs.namespace }}
 
       - name: Verify deployment rollout
         run: |
