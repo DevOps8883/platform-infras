@@ -4,22 +4,30 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: 'Target environment name (dev, staging, prod)'
         required: true
         type: string
       aws_region:
-        description: 'Target AWS deployment region'
         required: false
         type: string
         default: 'eu-west-1'
       eks_cluster:
-        description: 'Name of your target EKS cluster'
         required: true
         type: string
       namespace:
-        description: 'Target Kubernetes namespace'
         required: true
         type: string
+
+    # --- ADD THIS BLOCK TO FIX THE ERROR ---
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+      AWS_ROLE_TO_ASSUME:
+        required: true
+      GRAFANA_LOKI_URL:
+        required: true
+    # --------------------------------------
 
 permissions:
   id-token: write
@@ -27,8 +35,8 @@ permissions:
 
 jobs:
   code_quality_stage:
-    name: Quality Phase (${{ inputs.environment }})
-    uses: ./.github/workflows/code-quality-fragment.yaml
+    name: Quality Phase
+    uses: ./.github/workflows/code-quality.yaml
     with:
       environment: ${{ inputs.environment }}
     secrets:
@@ -36,9 +44,9 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   deploy_stage:
-    name: Deployment Phase (${{ inputs.environment }})
+    name: Deployment Phase
     needs: code_quality_stage
-    uses: ./.github/workflows/deploy-fragment.yaml
+    uses: ./.github/workflows/deploy.yaml
     with:
       environment: ${{ inputs.environment }}
       aws_region: ${{ inputs.aws_region }}
