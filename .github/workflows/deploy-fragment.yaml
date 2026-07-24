@@ -1,0 +1,98 @@
+name: NexaCloud Deployment Fragment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      aws_region:
+        required: true
+        type: string
+      eks_cluster:
+        required: true
+        type: string
+      namespace:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      AWS_ROLE_TO_ASSUME:
+        required: true
+      GRAFANA_LOKI_URL:
+        required: true
+
+env:
+  IMAGE_NAME: nexacloud-app
+
+jobs:
+  k8s_deploy:
+    name: Execute EKS Deployment
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ inputs.eks_cluster }} \
+            --region ${{ inputs.aws_region }}
+
+      - name: Create namespace (idempotent)
+        run: |
+          kubectl create namespace ${{ inputs.namespace }} \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/ -n ${{ inputs.namespace }}
+
+      - name: Update image
+        run: |
+          kubectl set image deployment/nexacloud-app \
+            nexacloud-app=${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }} \
+            -n ${{ inputs.namespace }}
+
+      - name: Verify deployment rollout
+        run: |
+          kubectl rollout status deployment/nexacloud-app -n ${{ inputs.namespace }} --timeout=300s 
+
+      - name: Send status to Self-Hosted Grafana Loki
+        if: always()
+        run: |
+          TIMESTAMP=$(date +%s%N)
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d '{
+              "streams": [
+                {
+                  "stream": {
+                    "job": "github-actions",
+                    "pipeline": "nexacloud-deploy",
+                    "environment": "${{ inputs.environment }}",
+                    "status": "${{ job.status }}",
+                    "run_id": "${{ github.run_id }}",
+                    "actor": "${{ github.actor }}"
+                  },
+                  "values": [
+                    [ "'$TIMESTAMP'", "Pipeline [${{ inputs.environment }}] finished with status: ${{ job.status }}. Triggered by ${{ github.actor }}." ]
+                  ]
+                }
+              ]
+            }' \
+            ${{ secrets.GRAFANA_LOKI_URL }}/loki/api/v1/push
