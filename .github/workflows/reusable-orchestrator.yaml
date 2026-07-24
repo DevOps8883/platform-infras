@@ -46,7 +46,7 @@ jobs:
   deploy_stage:
     name: Deployment Phase
     needs: code_quality_stage
-    uses: ./.github/workflows/deploy.yaml
+    uses: ./.github/workflows/deploy-fragment.yaml
     with:
       environment: ${{ inputs.environment }}
       aws_region: ${{ inputs.aws_region }}
