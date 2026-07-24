@@ -1,0 +1,30 @@
+name: Execute Multi-Environment Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  orchestrate_environments:
+    name: Run Environment Matrix
+    strategy:
+      fail-fast: true
+      max-parallel: 1 # Deploy sequentially (dev -> staging -> prod) to safeguard runtime stability
+      matrix:
+        env: [dev, staging, prod]
+    uses: ./.github/workflows/reusable.yaml
+    with:
+      environment: ${{ matrix.env }}
+      aws_region: 'eu-west-1'
+      eks_cluster: 'nexacloud-cluster-${{ matrix.env }}'
+      namespace: 'nexacloud-${{ matrix.env }}'
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      GRAFANA_LOKI_URL: ${{ secrets.GRAFANA_LOKI_URL }}
