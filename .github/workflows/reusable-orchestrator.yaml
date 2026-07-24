@@ -28,7 +28,7 @@ permissions:
 jobs:
   code_quality_stage:
     name: Quality Phase (${{ inputs.environment }})
-    uses: ./.github/workflows/code-quality.yaml
+    uses: ./.github/workflows/code-quality-fragment.yaml
     with:
       environment: ${{ inputs.environment }}
     secrets:
@@ -38,7 +38,7 @@ jobs:
   deploy_stage:
     name: Deployment Phase (${{ inputs.environment }})
     needs: code_quality_stage
-    uses: ./.github/workflows/deploy.yaml
+    uses: ./.github/workflows/deploy-fragment.yaml
     with:
       environment: ${{ inputs.environment }}
       aws_region: ${{ inputs.aws_region }}
