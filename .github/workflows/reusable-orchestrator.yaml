@@ -36,7 +36,7 @@ permissions:
 jobs:
   code_quality_stage:
     name: Quality Phase
-    uses: ./.github/workflows/code-quality.yaml
+    uses: ./.github/workflows/code-quality-fragment.yaml
     with:
       environment: ${{ inputs.environment }}
     secrets:
