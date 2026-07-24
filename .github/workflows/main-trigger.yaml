@@ -17,7 +17,7 @@ jobs:
       max-parallel: 1 # Deploy sequentially (dev -> staging -> prod) to safeguard runtime stability
       matrix:
         env: [dev, staging, prod]
-    uses: ./.github/workflows/reusable.yaml
+    uses: ./.github/workflows/reusable-orchestartor.yaml
     with:
       environment: ${{ matrix.env }}
       aws_region: 'eu-west-1'
